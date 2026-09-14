@@ -3,429 +3,181 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Global Chat Room</title>
-    <!-- Tailwind CSS for rapid styling -->
+    <title>Global Chat - Supabase</title>
+    <!-- Tailwind CSS for modern styling -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- FontAwesome for icons -->
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-        
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #0f172a; /* Slate 900 for a deep, modern dark theme */
-            color: #f8fafc; /* Slate 50 for high contrast text */
-        }
-
-        /* Custom Scrollbar for a sleek, integrated look */
-        ::-webkit-scrollbar {
-            width: 6px;
-        }
-        ::-webkit-scrollbar-track {
-            background: transparent; 
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #334155; /* Slate 700 */
-            border-radius: 10px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #475569; /* Slate 600 */
-        }
-
-        /* Message entrance animation for visual feedback */
-        @keyframes slideInUp {
-            0% { opacity: 0; transform: translateY(15px); }
-            100% { opacity: 1; transform: translateY(0); }
-        }
-        
-        .message-enter {
-            animation: slideInUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-        }
-
-        /* Glassmorphism effect for sticky headers/footers */
-        .glass-effect {
-            background: rgba(15, 23, 42, 0.75);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-        }
-        
-        /* Subtle pulse for the live indicator */
-        @keyframes gentlePulse {
-            0%, 100% { opacity: 1; transform: scale(1); }
-            50% { opacity: 0.6; transform: scale(0.9); }
-        }
-        .live-dot {
-            animation: gentlePulse 2s infinite;
-        }
-    </style>
+    <!-- Supabase JS Library -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
-<body class="h-screen w-full flex flex-col overflow-hidden bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-800 via-slate-900 to-black">
+<body class="bg-gray-900 text-white font-sans flex flex-col h-screen">
 
-    <!-- Header Section -->
-    <header class="glass-effect w-full py-3 px-4 sm:px-6 flex justify-between items-center z-10 shrink-0">
-        <div class="flex items-center gap-3">
-            <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/20">
-                <i class="fa-solid fa-satellite-dish text-white text-sm"></i>
-            </div>
-            <div>
-                <h1 class="text-lg font-bold tracking-tight text-white leading-tight">Nexus Chat</h1>
-                <p class="text-[11px] text-slate-400 flex items-center gap-1.5 font-medium uppercase tracking-wider">
-                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block live-dot shadow-[0_0_5px_rgba(52,211,153,0.5)]"></span>
-                    Global Relay Active
-                </p>
-            </div>
-        </div>
-        
-        <!-- User Connection Status -->
-        <div id="user-status" class="text-xs font-medium text-slate-300 bg-slate-800/80 py-1.5 px-3 rounded-lg border border-slate-700/50 flex items-center gap-2">
-            <i class="fa-solid fa-circle-notch fa-spin text-indigo-400"></i> 
-            <span class="hidden sm:inline">Establishing link...</span>
+    <!-- Header -->
+    <header class="bg-gray-800 shadow-md p-4 flex justify-between items-center z-10">
+        <h1 class="text-xl font-bold">Global Chat 🌍</h1>
+        <div class="text-sm text-green-400 flex items-center gap-2">
+            <span class="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
+            Live
         </div>
     </header>
 
-    <!-- Main Chat Area -->
-    <main id="chat-viewport" class="flex-1 w-full max-w-4xl mx-auto p-4 overflow-y-auto flex flex-col relative scroll-smooth">
-        
-        <!-- Initial Loading Overlay -->
-        <div id="connection-overlay" class="absolute inset-0 flex flex-col items-center justify-center bg-slate-900/90 backdrop-blur-sm z-20 transition-opacity duration-500">
-            <div class="relative w-16 h-16 flex items-center justify-center mb-4">
-                <div class="absolute inset-0 border-4 border-slate-700 rounded-full"></div>
-                <div class="absolute inset-0 border-4 border-indigo-500 rounded-full border-t-transparent animate-spin"></div>
-                <i class="fa-solid fa-lock text-slate-400 text-xl"></i>
-            </div>
-            <p class="text-slate-300 font-medium tracking-wide">Securing connection...</p>
-        </div>
-
-        <!-- Container for all messages -->
-        <div id="message-thread" class="flex flex-col w-full pb-4 min-h-full justify-end">
-            <!-- System Welcome Message -->
-            <div class="w-full text-center py-8 mb-auto mt-4">
-                <div class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-slate-800 border border-slate-700 mb-3">
-                    <i class="fa-solid fa-shield-halved text-slate-400 text-lg"></i>
-                </div>
-                <h2 class="text-slate-200 font-semibold mb-1">Welcome to Nexus</h2>
-                <p class="text-slate-500 text-sm max-w-sm mx-auto">This is a public, anonymous relay. Messages are broadcasted in real-time. Be respectful.</p>
-            </div>
-            <!-- Dynamic messages injected here -->
+    <!-- Chat Messages Area -->
+    <main id="chat-container" class="flex-1 overflow-y-auto p-4 space-y-4 flex flex-col">
+        <div class="text-center text-gray-500 text-sm mt-10">
+            Loading messages...
         </div>
     </main>
 
-    <!-- Input Footer -->
-    <footer class="w-full bg-slate-900/80 backdrop-blur-md border-t border-slate-800/80 p-3 sm:p-4 shrink-0 z-10">
-        <form id="message-form" class="max-w-4xl mx-auto relative flex items-end gap-2 sm:gap-3">
-            <div class="relative flex-1 bg-slate-800/50 rounded-xl border border-slate-700 focus-within:border-indigo-500/70 focus-within:bg-slate-800 transition-all shadow-inner overflow-hidden flex items-end">
-                <textarea 
-                    id="chat-input" 
-                    rows="1"
-                    class="w-full bg-transparent text-slate-100 px-4 py-3 outline-none resize-none max-h-32 placeholder-slate-500 text-sm sm:text-base leading-relaxed"
-                    placeholder="Broadcast a message..."
-                    disabled
-                ></textarea>
-            </div>
-            <button 
-                type="submit" 
-                id="transmit-btn"
-                disabled
-                class="w-11 h-11 sm:w-12 sm:h-12 rounded-xl bg-slate-700 text-slate-400 flex items-center justify-center hover:bg-indigo-600 hover:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-slate-900 transition-all disabled:opacity-40 disabled:hover:bg-slate-700 disabled:hover:text-slate-400 disabled:cursor-not-allowed shrink-0"
-                title="Send Message"
-            >
-                <i class="fa-solid fa-paper-plane text-sm sm:text-base"></i>
+    <!-- Input Form -->
+    <footer class="bg-gray-800 p-4 shadow-inner">
+        <form id="chat-form" class="flex flex-col sm:flex-row gap-2 max-w-5xl mx-auto">
+            <input type="text" id="username-input" placeholder="Your name" required
+                   class="sm:w-1/4 bg-gray-700 text-white rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 placeholder-gray-400">
+            
+            <input type="text" id="message-input" placeholder="Type a message..." required autocomplete="off"
+                   class="flex-1 bg-gray-700 text-white rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 placeholder-gray-400">
+            
+            <button type="submit"
+                    class="bg-indigo-600 hover:bg-indigo-700 transition px-8 py-3 rounded-lg font-semibold shadow-lg">
+                Send
             </button>
         </form>
     </footer>
 
-    <!-- Scripts -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, onSnapshot, addDoc, query, orderBy, limit } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
-        // Environment variables injected by the platform for the interactive environment
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'nexus-chat-local';
-        let firebaseConfig = {};
+    <script>
+        // ==========================================
+        // 1. ADD YOUR SUPABASE CREDENTIALS HERE
+        // ==========================================
+        const SUPABASE_URL = 'https://gjeylfesordhyprgccni.supabase.co/rest/v1/';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdqZXlsZmVzb3JkaHlwcmdjY25pIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk0MjA2NDQsImV4cCI6MjEwNDk5NjY0NH0._VrCKq9ByTdeU9Y3AcCtFODbWGcVDMQ-szRy3ZPIQuE';
         
-        try {
-            if (typeof __firebase_config !== 'undefined') {
-                firebaseConfig = JSON.parse(__firebase_config);
-            } else {
-                console.warn("Using platform default Firebase config.");
+        // Initialize Supabase
+        const client = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // DOM Elements
+        const chatContainer = document.getElementById('chat-container');
+        const chatForm = document.getElementById('chat-form');
+        const usernameInput = document.getElementById('username-input');
+        const messageInput = document.getElementById('message-input');
+
+        let isFirstLoad = true;
+
+        // ==========================================
+        // 2. FETCH PREVIOUS MESSAGES
+        // ==========================================
+        async function loadInitialMessages() {
+            const { data, error } = await client
+                .from('messages')
+                .select('*')
+                .order('created_at', { ascending: false }) // Get newest first
+                .limit(50); // Load last 50 messages
+
+            if (error) {
+                chatContainer.innerHTML = `<div class="text-red-400 text-center">Error connecting to database. Did you add your API keys?</div>`;
+                console.error(error);
+                return;
             }
-        } catch (e) {
-            console.error("Config parse error", e);
-        }
 
-        const initialToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
-
-        // Initialize Firebase
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-
-        const elements = {
-            thread: document.getElementById('message-thread'),
-            form: document.getElementById('message-form'),
-            input: document.getElementById('chat-input'),
-            sendBtn: document.getElementById('transmit-btn'),
-            viewport: document.getElementById('chat-viewport'),
-            overlay: document.getElementById('connection-overlay'),
-            status: document.getElementById('user-status')
-        };
-
-        let sessionUser = null;
-        let isScrolledToLatest = true;
-        let previousSenderId = null;
-
-        async function establishConnection() {
-            try {
-                if (initialToken) {
-                    await signInWithCustomToken(auth, initialToken);
-                } else {
-                    await signInAnonymously(auth);
-                }
-                
-                sessionUser = auth.currentUser;
-                const shortId = sessionUser.uid.substring(0, 5).toUpperCase();
-                
-                // Update UI to reflect connected state
-                elements.status.innerHTML = `
-                    <div class="w-4 h-4 rounded bg-indigo-500/20 flex items-center justify-center mr-1">
-                        <i class="fa-solid fa-user-ninja text-[10px] text-indigo-400"></i>
-                    </div>
-                    Agent ${shortId}
-                `;
-                elements.status.classList.add('border-indigo-500/30', 'bg-indigo-500/10');
-                
-                // Unlock interface
-                elements.input.disabled = false;
-                elements.input.focus();
-                
-                // Begin listening for data
-                synchronizeMessages();
-
-            } catch (error) {
-                console.error("Connection Failed:", error);
-                elements.status.innerHTML = `<i class="fa-solid fa-triangle-exclamation text-rose-500"></i> Error`;
-                elements.overlay.innerHTML = `
-                    <div class="text-center p-6 bg-slate-800 rounded-xl border border-rose-500/30 max-w-xs">
-                        <i class="fa-solid fa-plug-circle-xmark text-rose-500 text-3xl mb-3"></i>
-                        <h3 class="text-slate-200 font-medium mb-1">Connection Refused</h3>
-                        <p class="text-slate-400 text-xs">Could not establish a secure link to the server.</p>
-                    </div>`;
-            }
-        }
-
-        function adjustInputHeight() {
-            elements.input.style.height = 'auto';
-            const newHeight = Math.min(elements.input.scrollHeight, 120); // Max height ~120px
-            elements.input.style.height = newHeight + 'px';
+            chatContainer.innerHTML = ''; // Clear loading text
             
-            // Toggle send button state based on content
-            const hasContent = elements.input.value.trim().length > 0;
-            elements.sendBtn.disabled = !hasContent;
-            
-            if(hasContent) {
-                elements.sendBtn.classList.replace('bg-slate-700', 'bg-indigo-600');
-                elements.sendBtn.classList.replace('text-slate-400', 'text-white');
-                elements.sendBtn.classList.add('shadow-lg', 'shadow-indigo-600/30');
-            } else {
-                elements.sendBtn.classList.replace('bg-indigo-600', 'bg-slate-700');
-                elements.sendBtn.classList.replace('text-white', 'text-slate-400');
-                elements.sendBtn.classList.remove('shadow-lg', 'shadow-indigo-600/30');
-            }
+            // Reverse the array so the oldest of the 50 is at the top
+            const sortedMessages = data.reverse();
+            sortedMessages.forEach(displayMessage);
+            scrollToBottom();
+            isFirstLoad = false;
         }
 
-        elements.input.addEventListener('input', adjustInputHeight);
-
-        // Allow sending with Enter, but allow newlines with Shift+Enter
-        elements.input.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                if (!elements.sendBtn.disabled) {
-                    elements.form.dispatchEvent(new Event('submit'));
-                }
-            }
-        });
-
-        elements.viewport.addEventListener('scroll', () => {
-            const threshold = 50; // pixels from bottom
-            const position = elements.viewport.scrollTop + elements.viewport.offsetHeight;
-            const height = elements.viewport.scrollHeight;
-            isScrolledToLatest = height - position <= threshold;
-        });
-
-        function scrollToLatest() {
-            elements.viewport.scrollTo({
-                top: elements.viewport.scrollHeight,
-                behavior: 'smooth'
-            });
-            isScrolledToLatest = true;
+        // ==========================================
+        // 3. LISTEN FOR NEW MESSAGES IN REAL-TIME
+        // ==========================================
+        function setupRealtimeSubscription() {
+            client
+                .channel('public:messages')
+                .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, payload => {
+                    displayMessage(payload.new);
+                    // Only force scroll if the user is already near the bottom
+                    scrollToBottom();
+                })
+                .subscribe();
         }
 
-        function formatTimestamp(ts) {
-            if (!ts) return '';
-            const date = new Date(ts);
-            return date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
-        }
-
-        function synchronizeMessages() {
-            // Define the specific path required by the platform's security rules
-            const collectionPath = `artifacts/${appId}/public/data/messages`;
-            const messagesRef = collection(db, collectionPath);
-            
-            // NOTE: Due to strict platform rules, complex queries (orderBy/limit) 
-            // might fail if indexes aren't built. We fetch all and sort client-side.
-            // For production with massive data, this requires proper Firestore setup.
-            
-            onSnapshot(messagesRef, (snapshot) => {
-                const incomingData = [];
-                snapshot.forEach(doc => {
-                    incomingData.push({ _id: doc.id, ...doc.data() });
-                });
-
-                // Client-side sort by timestamp
-                incomingData.sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
-                
-                displayMessages(incomingData);
-
-                // Fade out loading screen on first load
-                if (elements.overlay.style.opacity !== '0') {
-                    elements.overlay.style.opacity = '0';
-                    setTimeout(() => { elements.overlay.style.display = 'none'; }, 500);
-                }
-
-            }, (error) => {
-                console.error("Sync Error:", error);
-                // Non-intrusive error display
-                const errorBanner = document.createElement('div');
-                errorBanner.className = 'bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs text-center p-2 rounded mx-4 mb-2';
-                errorBanner.textContent = 'Connection sync interrupted. Retrying...';
-                elements.thread.appendChild(errorBanner);
-            });
-        }
-
-        function displayMessages(messagesList) {
-            // In a robust app, we'd append only new messages. 
-            // Given the platform constraints, we re-render but preserve the welcome message.
-            const welcomeMsg = elements.thread.firstElementChild.outerHTML;
-            elements.thread.innerHTML = welcomeMsg;
-            previousSenderId = null;
-
-            if (messagesList.length === 0) return;
-
-            const fragment = document.createDocumentFragment();
-
-            messagesList.forEach(msg => {
-                const isSelf = msg.uid === sessionUser.uid;
-                const isNewSender = msg.uid !== previousSenderId;
-                
-                const wrapper = document.createElement('div');
-                // margin-top larger if it's a new sender to create grouping
-                wrapper.className = `message-enter flex w-full flex-col px-4 ${isSelf ? 'items-end' : 'items-start'} ${isNewSender ? 'mt-4' : 'mt-1'}`;
-                
-                let metadataHtml = '';
-                if (isNewSender && !isSelf) {
-                    const alias = msg.uid ? msg.uid.substring(0,5).toUpperCase() : 'ANON';
-                    metadataHtml = `
-                        <div class="flex items-center gap-1.5 mb-1 px-1">
-                            <span class="text-[10px] font-medium text-slate-400 tracking-wider">AGENT ${alias}</span>
-                        </div>
-                    `;
-                }
-
-                // Styling variations based on sender
-                const bubbleBase = 'px-4 py-2.5 text-sm md:text-[15px] leading-relaxed relative max-w-[85%] sm:max-w-[75%] break-words';
-                let bubbleStyle = '';
-                let tailHtml = '';
-
-                if (isSelf) {
-                    bubbleStyle = 'bg-indigo-600 text-white rounded-2xl rounded-tr-sm shadow-sm';
-                    // Optional: decorative tail for the bubble
-                    // tailHtml = isNewSender ? `<div class="absolute top-0 -right-1 w-2 h-3 bg-indigo-600" style="clip-path: polygon(0 0, 0% 100%, 100% 0);"></div>` : '';
-                } else {
-                    bubbleStyle = 'bg-slate-800 border border-slate-700/50 text-slate-200 rounded-2xl rounded-tl-sm shadow-sm';
-                    // tailHtml = isNewSender ? `<div class="absolute top-0 -left-1 w-2 h-3 bg-slate-800 border-t border-l border-slate-700/50" style="clip-path: polygon(100% 0, 100% 100%, 0 0);"></div>` : '';
-                }
-
-                // Protect against HTML injection
-                const safeTextNode = document.createElement('div');
-                safeTextNode.className = 'whitespace-pre-wrap';
-                safeTextNode.textContent = msg.content;
-
-                wrapper.innerHTML = `
-                    ${metadataHtml}
-                    <div class="group relative flex flex-col ${isSelf ? 'items-end' : 'items-start'} w-full">
-                        <div class="${bubbleBase} ${bubbleStyle}">
-                            ${safeTextNode.outerHTML}
-                            ${tailHtml}
-                        </div>
-                        <span class="text-[9px] text-slate-500 font-medium mt-1 px-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200 ${isSelf ? 'text-right' : 'text-left'}">
-                            ${formatTimestamp(msg.timestamp)}
-                        </span>
-                    </div>
-                `;
-                
-                fragment.appendChild(wrapper);
-                previousSenderId = msg.uid;
-            });
-
-            elements.thread.appendChild(fragment);
-
-            // Maintain scroll position logically
-            if (isScrolledToLatest) {
-                // Use requestAnimationFrame to ensure DOM has updated before scrolling
-                requestAnimationFrame(scrollToLatest);
-            }
-        }
-
-        elements.form.addEventListener('submit', async (e) => {
+        // ==========================================
+        // 4. SEND A NEW MESSAGE
+        // ==========================================
+        chatForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             
-            const content = elements.input.value.trim();
-            if (!content || !sessionUser) return;
+            const username = usernameInput.value.trim();
+            const content = messageInput.value.trim();
+            if (!username || !content) return;
 
-            // 1. Optimistic UI Update (Clear input immediately for perceived speed)
-            elements.input.value = '';
-            adjustInputHeight();
-            elements.input.focus();
-            isScrolledToLatest = true; // Force snap to bottom
+            // Immediately clear the input field for a snappy feel
+            messageInput.value = '';
+            messageInput.focus();
 
-            // 2. Transmit to Database
-            try {
-                const collectionPath = `artifacts/${appId}/public/data/messages`;
-                const messagesRef = collection(db, collectionPath);
-                
-                await addDoc(messagesRef, {
-                    content: content,
-                    uid: sessionUser.uid,
-                    timestamp: Date.now()
-                });
-                
-            } catch (error) {
-                console.error("Transmission Error:", error);
-                
-                // Show localized error message in the chat thread
-                const errorItem = document.createElement('div');
-                errorItem.className = 'w-full flex justify-center my-2';
-                errorItem.innerHTML = `
-                    <div class="bg-rose-900/40 text-rose-300 text-xs px-3 py-1.5 rounded-full flex items-center gap-2 border border-rose-800/50">
-                        <i class="fa-solid fa-circle-exclamation"></i>
-                        Failed to transmit: "${content.substring(0, 15)}${content.length > 15 ? '...' : ''}"
-                    </div>
-                `;
-                elements.thread.appendChild(errorItem);
-                scrollToLatest();
-                
-                // Optionally put the text back in the input
-                // elements.input.value = content; 
-                // adjustInputHeight();
+            const { error } = await client
+                .from('messages')
+                .insert([{ username, content }]);
+
+            if (error) {
+                console.error('Error sending message:', error);
+                alert('Failed to send message.');
             }
         });
 
-        // Start the process when the script loads
-        establishConnection();
+        // ==========================================
+        // 5. HELPER FUNCTIONS
+        // ==========================================
+        function displayMessage(msg) {
+            // Check if this message was sent by the current user
+            const isMe = msg.username === usernameInput.value.trim();
+            
+            const msgWrapper = document.createElement('div');
+            msgWrapper.className = `flex flex-col max-w-[80%] ${isMe ? 'self-end items-end' : 'self-start items-start'} animate-fade-in-up`;
+            
+            const header = document.createElement('span');
+            header.className = 'text-xs text-gray-400 mb-1 px-1 font-medium tracking-wide';
+            header.textContent = msg.username;
+            
+            const bubble = document.createElement('div');
+            // Style the bubble differently if it's our own message
+            bubble.className = `px-4 py-2.5 rounded-2xl text-sm md:text-base shadow-sm break-words ${
+                isMe 
+                ? 'bg-indigo-600 text-white rounded-br-sm' 
+                : 'bg-gray-700 text-gray-100 rounded-bl-sm'
+            }`;
+            bubble.textContent = msg.content;
+            
+            msgWrapper.appendChild(header);
+            msgWrapper.appendChild(bubble);
+            
+            if (isFirstLoad) {
+                // If it's the initial load, remove the animation class so they don't all stagger in
+                msgWrapper.classList.remove('animate-fade-in-up');
+            }
 
+            chatContainer.appendChild(msgWrapper);
+        }
+
+        function scrollToBottom() {
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        // Add a simple animation style block to the head
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes fadeInUp {
+                from { opacity: 0; transform: translateY(10px); }
+                to { opacity: 1; transform: translateY(0); }
+            }
+            .animate-fade-in-up {
+                animation: fadeInUp 0.3s ease-out forwards;
+            }
+        `;
+        document.head.appendChild(style);
+
+        // Start the app
+        loadInitialMessages();
+        setupRealtimeSubscription();
     </script>
 </body>
 </html>
